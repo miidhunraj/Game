@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Raleway:wght@300;400&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:radial-gradient(ellipse at center,#0c0c1e 0%,#050508 100%);color:#d4cfe8;font-family:'Raleway',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+  h1{font-family:'Cinzel',serif;font-size:1.6rem;letter-spacing:.5em;color:#c8b8f0;text-shadow:0 0 40px #8866cc44;padding:1.2rem 0 .5rem}
+  #canvas{display:block;cursor:pointer}
+  .info-panel{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:rgba(8,6,20,.85);border:1px solid #332255;backdrop-filter:blur(8px);border-radius:10px;padding:.75rem 1.5rem;min-width:220px;text-align:center;transition:opacity .3s;opacity:0;pointer-events:none}
+  .info-panel.show{opacity:1}
+  .planet-name{font-family:'Cinzel',serif;font-size:1.1rem;color:#c8b8f0;margin-bottom:.25rem}
+  .planet-stats{font-size:.72rem;color:#9988bb;line-height:1.8}
+  .controls{position:fixed;top:4.5rem;right:1.5rem;display:flex;flex-direction:column;gap:.5rem;align-items:flex-end}
+  .ctrl-btn{background:rgba(30,20,50,.8);border:1px solid #332255;color:#9988bb;font-size:.7rem;font-family:'Raleway';letter-spacing:.1em;padding:.4rem .8rem;border-radius:4px;cursor:pointer;transition:all .2s}
+  .ctrl-btn:hover{border-color:#8855cc;color:#c8b8f0}
+  .ctrl-btn.active{border-color:#8855cc;color:#c8b8f0;background:rgba(60,30,100,.8)}
+  input[type=range]{-webkit-appearance:none;width:120px;height:2px;background:#332255;outline:none;border-radius:1px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#8855cc;border-radius:50%;cursor:pointer}
+  .speed-wrap{display:flex;align-items:center;gap:.5rem;font-size:.7rem;color:#9988bb}
+</style>
+</head>
+<body>
+<h1>SOLAR SYSTEM</h1>
+<canvas id="canvas"></canvas>
+<div class="controls">
+  <div class="speed-wrap">SPEED<input type="range" id="speed" min="0.1" max="5" step="0.1" value="1"></div>
+  <button class="ctrl-btn" id="btnOrbits">ORBITS ON</button>
+  <button class="ctrl-btn" id="btnPause">PAUSE</button>
+</div>
+<div class="info-panel" id="info">
+  <div class="planet-name" id="info-name"></div>
+  <div class="planet-stats" id="info-stats"></div>
+</div>
+
+<script>
+const cv=document.getElementById('canvas'),ctx=cv.getContext('2d');
+let W,H,cx,cy,scale;
+
+const PLANETS=[
+  {name:'Mercury',period:0.241,radius:3,color:'#b5b0a8',moons:0,distance:58,desc:'Closest to the Sun · 88 Earth days/year · No atmosphere'},
+  {name:'Venus', period:0.615,radius:5.5,color:'#e8c470',moons:0,distance:108,desc:'Hottest planet · 225 Earth days/year · Thick CO₂ clouds'},
+  {name:'Earth', period:1,    radius:6,  color:'#4488cc',moons:1,distance:150,desc:'Our home · 365 days/year · 1 Moon'},
+  {name:'Mars',  period:1.881,radius:4.5,color:'#cc5533',moons:2,distance:228,desc:'The Red Planet · 687 Earth days/year · 2 Moons'},
+  {name:'Jupiter',period:11.86,radius:14,color:'#c8a46e',moons:95,distance:778,desc:'Largest planet · 12 Earth years/year · 95 Moons'},
+  {name:'Saturn',period:29.46,radius:12,color:'#d4b96e',moons:146,rings:true,distance:1427,desc:'Ringed giant · 29 Earth years/year · 146 Moons'},
+  {name:'Uranus',period:84.01,radius:9, color:'#88ddee',moons:28,distance:2871,desc:'Ice giant · 84 Earth years/year · 28 Moons'},
+  {name:'Neptune',period:164.8,radius:8,color:'#4466ee',moons:16,distance:4495,desc:'Farthest planet · 165 Earth years/year · 16 Moons'},
+];
+
+// Scale orbital distances so they fit nicely (log-ish compression)
+const orbitRadii=[0.38,0.52,0.68,0.83,1.05,1.28,1.52,1.76]; // relative
+const SUN_R=22;
+let orbitScale;
+let time=0,speed=1,showOrbits=true,paused=false;
+let stars=[];
+let hovered=null;
+
+function resize(){
+  W=window.innerWidth;H=Math.min(window.innerHeight-80,W);
+  cv.width=W;cv.height=H;cx=W/2;cy=H/2;
+  orbitScale=(Math.min(W,H)/2)*0.88;
+  if(stars.length===0)genStars();
+}
+
+function genStars(){
+  stars=Array.from({length:200},()=>({
+    x:Math.random()*W,y:Math.random()*H,
+    r:Math.random()*1.2+.2,
+    o:Math.random()*.8+.2
+  }));
+}
+
+function drawStars(){
+  stars.forEach(s=>{
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${s.o})`;ctx.fill();
+  });
+}
+
+function drawSun(){
+  const r=SUN_R*(orbitScale/400);
+  for(let i=3;i>=1;i--){
+    ctx.beginPath();ctx.arc(cx,cy,r*i*1.4,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,${140+i*30},0,${0.04/i})`;ctx.fill();
+  }
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  g.addColorStop(0,'#fff9e0');g.addColorStop(.4,'#ffcc00');g.addColorStop(1,'#ff6600');
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+}
+
+function getPos(i){
+  const p=PLANETS[i],angle=(time/p.period)*Math.PI*2;
+  const or=orbitRadii[i]*orbitScale;
+  return{x:cx+Math.cos(angle)*or,y:cy+Math.sin(angle)*or,or};
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawStars();
+  // orbit rings
+  if(showOrbits){
+    PLANETS.forEach((_,i)=>{
+      const or=orbitRadii[i]*orbitScale;
+      ctx.beginPath();ctx.arc(cx,cy,or,0,Math.PI*2);
+      ctx.strokeStyle=hovered===i?'rgba(200,180,240,0.3)':'rgba(100,80,150,0.18)';
+      ctx.lineWidth=hovered===i?1.5:.5;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);
+    });
+  }
+  drawSun();
+  PLANETS.forEach((p,i)=>{
+    const{x,y}=getPos(i);
+    const r=p.radius*(orbitScale/350);
+    // glow
+    if(hovered===i){
+      ctx.beginPath();ctx.arc(x,y,r*3,0,Math.PI*2);
+      ctx.fillStyle='rgba(200,180,255,0.12)';ctx.fill();
+    }
+    // planet
+    const g=ctx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);
+    g.addColorStop(0,'#ffffff44');g.addColorStop(.4,p.color);g.addColorStop(1,'#00000066');
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    // Saturn rings
+    if(p.rings){
+      ctx.save();ctx.translate(x,y);ctx.scale(1,.35);
+      ctx.beginPath();ctx.arc(0,0,r*2.5,0,Math.PI*2);
+      ctx.strokeStyle='rgba(212,185,110,0.5)';ctx.lineWidth=r*.8;ctx.stroke();
+      ctx.beginPath();ctx.arc(0,0,r*2,0,Math.PI*2);
+      ctx.strokeStyle='rgba(200,165,90,0.3)';ctx.lineWidth=r*.4;ctx.stroke();
+      ctx.restore();
+    }
+    // label
+    if(orbitScale>150){
+      ctx.fillStyle=hovered===i?'#e8d8ff':'#9988bb';
+      ctx.font=`${hovered===i?500:400} ${10*(orbitScale/400)+8}px Raleway`;
+      ctx.textAlign='center';
+      ctx.fillText(p.name,x,y+r+12*(orbitScale/400));
+    }
+  });
+}
+
+let animId;
+function loop(){
+  if(!paused)time+=0.0003*speed;
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+// Interaction
+cv.addEventListener('mousemove',e=>{
+  const rect=cv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  hovered=null;
+  PLANETS.forEach((p,i)=>{
+    const{x,y}=getPos(i),r=p.radius*(orbitScale/350)+8;
+    if(Math.hypot(mx-x,my-y)<r)hovered=i;
+  });
+  if(hovered!==null){
+    const p=PLANETS[hovered];
+    document.getElementById('info-name').textContent=p.name;
+    document.getElementById('info-stats').textContent=p.desc;
+    document.getElementById('info').classList.add('show');
+  }else{document.getElementById('info').classList.remove('show')}
+});
+
+cv.addEventListener('click',e=>{
+  if(hovered!==null){
+    const p=PLANETS[hovered];
+    document.getElementById('info-name').textContent=p.name;
+    document.getElementById('info-stats').textContent=p.desc+` · Distance: ${p.distance}M km`;
+    document.getElementById('info').classList.add('show');
+  }
+});
+
+document.getElementById('speed').addEventListener('input',e=>speed=parseFloat(e.target.value));
+document.getElementById('btnOrbits').addEventListener('click',function(){
+  showOrbits=!showOrbits;this.textContent=showOrbits?'ORBITS ON':'ORBITS OFF';
+  this.classList.toggle('active',showOrbits);
+});
+document.getElementById('btnPause').addEventListener('click',function(){
+  paused=!paused;this.textContent=paused?'RESUME':'PAUSE';this.classList.toggle('active',paused);
+});
+
+window.addEventListener('resize',()=>{resize();stars=[];genStars()});
+resize();loop();
+</script>
+</body>
+</html>
