@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mithun's Arcade | Game Hub</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #38bdf8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        .game-card {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3);
+            border-color: var(--accent-color);
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .description {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Project Arcade</h1>
+
+    <div class="container">
+        <a href="./Pixel" class="game-card">
+            <span class="icon">👾</span>
+            <div class="game-title">Pixel</div>
+            <p class="description">Experience retro-style pixel adventures.</p>
+        </a>
+
+        <a href="./Tetris" class="game-card">
+            <span class="icon">🧱</span>
+            <div class="game-title">Tetris</div>
+            <p class="description">Classic block-stacking puzzle action.</p>
+        </a>
+
+        <a href="./Solar" class="game-card">
+            <span class="icon">☀️</span>
+            <div class="game-title">Solar</div>
+            <p class="description">Explore the mechanics of the cosmos.</p>
+        </a>
+    </div>
+
+    <footer>
+        &copy; 2026 miidhunraj.live
+    </footer>
+
+</body>
+</html>
